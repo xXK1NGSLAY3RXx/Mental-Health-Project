@@ -55,5 +55,5 @@ Assets/AssetStoreTools*
 
 # =============== Additional =====================
 # Uncomment if you have these folders and don't want to check them in
-# UserSettings/
+UserSettings/
 # Packages/com.unity.*.*
