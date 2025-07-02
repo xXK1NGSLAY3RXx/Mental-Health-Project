@@ -9,8 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f4dd6c9eb0f96443b129a05d22a440c, type: 3}
-  m_Name: Stay In R15
+  m_Script: {fileID: 11500000, guid: 9509de297a151ae4a9291f752ffd247b, type: 3}
+  m_Name: Escape
   m_EditorClassIdentifier: 
-  center: {x: 0, y: 0}
-  radius: 12
+  detectionRadius: 5
+  maxFleeForce: 1
+  predatorLayer:
+    serializedVersion: 2
+    m_Bits: 64

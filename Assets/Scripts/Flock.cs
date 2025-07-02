@@ -7,6 +7,7 @@ public class Flock : MonoBehaviour
     public FlockAgent agentPrefab;
     List<FlockAgent> agents = new List<FlockAgent>();
     public FlockBehavior behavior;
+    
 
     [Range(10, 500)]
     public int startingCount = 250;
@@ -25,6 +26,8 @@ public class Flock : MonoBehaviour
     float squareNeighborRadius;
     float squareAvoidanceRadius;
     public float SquareAvoidanceRadius { get { return squareAvoidanceRadius; } }
+
+
 
     // Start is called before the first frame update
     void Start()
