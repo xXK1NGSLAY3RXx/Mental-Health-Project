@@ -1,18 +1,21 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class Flock : MonoBehaviour
 {
+    [Header("Agent Setup")]
     public FlockAgent agentPrefab;
+    public LayerMask AgentLayer;
     List<FlockAgent> agents = new List<FlockAgent>();
     public FlockBehavior behavior;
-    
 
-    [Range(10, 500)]
+    [Header("Spawn Settings")]
+    [Range(1, 500)]
     public int startingCount = 250;
-    const float AgentDensity = 0.08f;
+    [Tooltip("Radius around this Flock’s transform to spread agents")]
+    public float spawnRadius = 5f;
 
+    [Header("Movement Settings")]
     [Range(1f, 100f)]
     public float driveFactor = 10f;
     [Range(1f, 100f)]
@@ -25,63 +28,57 @@ public class Flock : MonoBehaviour
     float squareMaxSpeed;
     float squareNeighborRadius;
     float squareAvoidanceRadius;
-    public float SquareAvoidanceRadius { get { return squareAvoidanceRadius; } }
+    public float SquareAvoidanceRadius => squareAvoidanceRadius;
 
-
-
-    // Start is called before the first frame update
     void Start()
     {
-        squareMaxSpeed = maxSpeed * maxSpeed;
-        squareNeighborRadius = neighborRadius * neighborRadius;
+        squareMaxSpeed        = maxSpeed * maxSpeed;
+        squareNeighborRadius  = neighborRadius * neighborRadius;
         squareAvoidanceRadius = squareNeighborRadius * avoidanceRadiusMultiplier * avoidanceRadiusMultiplier;
 
+        // Spawn around THIS flock’s position, inside spawnRadius
         for (int i = 0; i < startingCount; i++)
         {
+            Vector2 offset = Random.insideUnitCircle * spawnRadius;
+            Vector3 pos = transform.position + (Vector3)offset;
+
+            // optional: raycast or OverlapCircle to avoid spawning *inside* other agents
             FlockAgent newAgent = Instantiate(
                 agentPrefab,
-                Random.insideUnitCircle * startingCount * AgentDensity,
+                pos,
                 Quaternion.Euler(Vector3.forward * Random.Range(0f, 360f)),
                 transform
-                );
-            newAgent.name = "Agent " + i;
-            // newAgent.Initialize(this);
+            );
+            newAgent.name = $"{name} Agent {i}";
             agents.Add(newAgent);
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
-        foreach (FlockAgent agent in agents)
+        foreach (var agent in agents.ToArray())
         {
-            List<Transform> context = GetNearbyObjects(agent);
-
-            //FOR DEMO ONLY
-            //agent.GetComponentInChildren<SpriteRenderer>().color = Color.Lerp(Color.white, Color.red, context.Count / 6f);
-
-            Vector2 move = behavior.CalculateMove(agent, context, this);
-            move *= driveFactor;
+            var context = GetNearbyObjects(agent);
+            Vector2 move = behavior.CalculateMove(agent, context, this) * driveFactor;
             if (move.sqrMagnitude > squareMaxSpeed)
-            {
                 move = move.normalized * maxSpeed;
-            }
             agent.Move(move);
         }
     }
 
     List<Transform> GetNearbyObjects(FlockAgent agent)
     {
-        List<Transform> context = new List<Transform>();
-        Collider2D[] contextColliders = Physics2D.OverlapCircleAll(agent.transform.position, neighborRadius);
-        foreach (Collider2D c in contextColliders)
-        {
+        var context = new List<Transform>();
+        var cols = Physics2D.OverlapCircleAll(agent.transform.position, neighborRadius, AgentLayer);
+        foreach (var c in cols)
             if (c != agent.AgentCollider)
-            {
                 context.Add(c.transform);
-            }
-        }
         return context;
     }
 
+    public void RemoveAgent(FlockAgent agent)
+    {
+        if (agents.Remove(agent))
+            Destroy(agent.gameObject);
+    }
 }

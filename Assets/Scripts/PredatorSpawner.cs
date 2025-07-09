@@ -1,73 +1,83 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch; 
+using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 using System.Collections.Generic;
+using UnityEngine.InputSystem;
 
-public class PredatorSpawner : MonoBehaviour, TouchControls.ITouchActions
+public class PredatorSpawner : MonoBehaviour
 {
     [Tooltip("Your Predator prefab (must have Collider2D on Predator layer)")]
     public GameObject predatorPrefab;
 
-    TouchControls controls;
-    Dictionary<int, GameObject> activePredators = new();
+    // Track each finger by its unique touchId
+    private Dictionary<int, GameObject> activePredators = new();
 
-    void Awake()
+    void OnEnable()
     {
-        // 1) Instantiate and hook up callbacks
-        controls = new TouchControls();
-        controls.Touch.SetCallbacks(this);
+        EnhancedTouchSupport.Enable();
     }
 
-    void OnEnable()  => controls.Enable();
-    void OnDisable() => controls.Disable();
+    void OnDisable()
+    {
+        EnhancedTouchSupport.Disable();
+    }
 
-    // 2) Mouse fallback in Update
     void Update()
     {
-        // if user clicks with the left mouse button…
-        if (Mouse.current.leftButton.wasPressedThisFrame)
-            BeginSpawn(-1, Mouse.current.position.ReadValue());
-        if (activePredators.ContainsKey(-1) && Mouse.current.leftButton.isPressed)
-            MovePredator(-1, Mouse.current.position.ReadValue());
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
-            EndSpawn(-1);
+        // --- Touch screen multitouch via Enhanced Touch ---
+        foreach (var t in Touch.activeTouches)
+        {
+            int id = t.touchId;
+            Vector2 pos = t.screenPosition;
+
+            switch (t.phase)
+            {
+                case UnityEngine.InputSystem.TouchPhase.Began:
+                    BeginSpawn(id, pos);
+                    break;
+
+                case UnityEngine.InputSystem.TouchPhase.Moved:
+                case UnityEngine.InputSystem.TouchPhase.Stationary:
+                    if (activePredators.ContainsKey(id))
+                        MovePredator(id, pos);
+                    break;
+
+                case UnityEngine.InputSystem.TouchPhase.Ended:
+                case UnityEngine.InputSystem.TouchPhase.Canceled:
+                    EndSpawn(id);
+                    break;
+            }
+        }
+
+        // --- Mouse fallback for Editor / Standalone ---
+        const int MOUSE_ID = -1;
+        var mouse = Mouse.current;
+        if (mouse.leftButton.wasPressedThisFrame)
+            BeginSpawn(MOUSE_ID, mouse.position.ReadValue());
+        if (activePredators.ContainsKey(MOUSE_ID) && mouse.leftButton.isPressed)
+            MovePredator(MOUSE_ID, mouse.position.ReadValue());
+        if (mouse.leftButton.wasReleasedThisFrame)
+            EndSpawn(MOUSE_ID);
     }
 
-    // 3) New Input System touch press callback
-    public void OnTouchPress(InputAction.CallbackContext ctx)
-    {
-        int id = ctx.control.device.deviceId;
-        Vector2 pos = controls.Touch.TouchPosition.ReadValue<Vector2>();
-
-        if (ctx.started)      BeginSpawn(id, pos);
-        else if (ctx.canceled) EndSpawn(id);
-    }
-
-    // 4) New Input System touch position callback
-    public void OnTouchPosition(InputAction.CallbackContext ctx)
-    {
-        int id = ctx.control.device.deviceId;
-        if (activePredators.ContainsKey(id))
-            MovePredator(id, ctx.ReadValue<Vector2>());
-    }
-
-    // --- Spawning / Moving / Despawning helpers ---
-    void BeginSpawn(int pointerId, Vector2 screenPos)
+    void BeginSpawn(int id, Vector2 screenPos)
     {
         Vector3 world = Camera.main.ScreenToWorldPoint((Vector3)screenPos + Vector3.forward * 10f);
-        world.z = 0;
-        activePredators[pointerId] = Instantiate(predatorPrefab, world, Quaternion.identity);
+        world.z = 0f;
+        activePredators[id] = Instantiate(predatorPrefab, world, Quaternion.identity);
     }
 
-    void MovePredator(int pointerId, Vector2 screenPos)
+    void MovePredator(int id, Vector2 screenPos)
     {
         Vector3 world = Camera.main.ScreenToWorldPoint((Vector3)screenPos + Vector3.forward * 10f);
-        world.z = 0;
-        activePredators[pointerId].transform.position = world;
+        world.z = 0f;
+        activePredators[id].transform.position = world;
     }
 
-    void EndSpawn(int pointerId)
+    void EndSpawn(int id)
     {
-        Destroy(activePredators[pointerId]);
-        activePredators.Remove(pointerId);
+        if (!activePredators.ContainsKey(id)) return;
+        Destroy(activePredators[id]);
+        activePredators.Remove(id);
     }
 }
