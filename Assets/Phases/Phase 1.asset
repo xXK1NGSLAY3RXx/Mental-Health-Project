@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sentences:
   - {fileID: 11400000, guid: b094695aecaed3b44b81881be179d006, type: 2}
+  - {fileID: 11400000, guid: 8eca83ceb6c162a4990accfaf3c005a5, type: 2}
+  - {fileID: 11400000, guid: 1a133277763358c479456ef60a25e9e1, type: 2}

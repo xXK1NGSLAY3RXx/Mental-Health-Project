@@ -10,6 +10,7 @@ public class FlockAgent : MonoBehaviour
     public Polarity polarity;
     public static List<FlockAgent> AllAgents = new List<FlockAgent>();
     [HideInInspector] public Flock ParentFlock;
+    [HideInInspector] public WordDefinition AssignedWord;
 
 
 

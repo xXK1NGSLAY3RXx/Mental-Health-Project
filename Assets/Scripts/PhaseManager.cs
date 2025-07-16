@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -36,6 +37,13 @@ public class PhaseManager : MonoBehaviour
 
     private void OnSentenceAbsorbed(SentenceInstance si)
     {
+        // Defer phase change until next frame to avoid dictionary conflicts
+        StartCoroutine(NextPhaseDelayed());
+    }
+
+    private IEnumerator NextPhaseDelayed()
+    {
+        yield return null;
         NextPhase();
     }
 
@@ -45,27 +53,31 @@ public class PhaseManager : MonoBehaviour
         if (currentPhase >= phases.Length)
         {
             Debug.Log("All phases complete!");
+            // Clean up
+            sentenceMgr.ResetPhase();
+            flock.ClearAgents();
+            enabled = false;
             return;
         }
 
         var def = phases[currentPhase];
 
-        // 1) Reset everything in the SentenceManager
+        // Reset for new phase
         sentenceMgr.ResetPhase();
+        sentenceMgr.AllowedSentences = def.sentences.ToList();
 
-        // 2) Build the unique bag of WordDefinitions
-        var bag = new HashSet<WordDefinition>();
-        foreach (var sd in def.sentences)
-            foreach (var wd in sd.wordsInOrder)
-                bag.Add(wd);
+        // Build the word bag
+        var bag = def.sentences
+                     .SelectMany(sd => sd.wordsInOrder)
+                     .Distinct()
+                     .ToList();
 
-        // 3) Tell SentenceManager which words to use this phase
-        sentenceMgr.Words = bag.ToList();
+        sentenceMgr.Words = bag;
 
-        // 4) Spawn exactly one boid per word in that bag
+        // Spawn one agent per word, assigning each its WordDefinition
         var polarities = bag.Select(wd => wd.Polarity).ToList();
-        flock.SpawnAgentsFromPolarities(polarities);
+        flock.SpawnAgentsFromPolarities(polarities, bag);
 
-        Debug.Log($"Phase {currentPhase+1} started with {bag.Count} words");
+        Debug.Log($"Phase {currentPhase + 1} started with {bag.Count} words");
     }
 }

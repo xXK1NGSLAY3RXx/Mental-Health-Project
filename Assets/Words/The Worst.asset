@@ -15,7 +15,7 @@ MonoBehaviour:
   Text: The Worst
   Polarity: 2
   RequiredCount: 1
-  orderIndex: 2
+  orderIndex: 3
   additiveValue: -50
   operation: 0
   multiplier: 1

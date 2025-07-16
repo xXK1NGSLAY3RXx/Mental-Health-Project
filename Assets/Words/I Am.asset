@@ -15,4 +15,7 @@ MonoBehaviour:
   Text: I Am
   Polarity: 1
   RequiredCount: 1
-  orderIndex: 0
+  orderIndex: 1
+  additiveValue: 0
+  operation: 0
+  multiplier: 1

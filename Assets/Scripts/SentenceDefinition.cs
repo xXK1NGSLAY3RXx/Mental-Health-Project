@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [CreateAssetMenu(menuName="Words/Sentence Definition")]
@@ -18,21 +19,24 @@ public class SentenceDefinition : ScriptableObject
     /// for every word in this template (by Polarity & RequiredCount).
     /// </summary>
     public bool MatchesCluster(Cluster cluster)
-    {
-        // tally boids by polarity
-        var counts = new Dictionary<Polarity,int>();
-        foreach (var agent in cluster.Members)
-        {
-            if (!counts.ContainsKey(agent.polarity)) counts[agent.polarity] = 0;
-            counts[agent.polarity]++;
-        }
+{
+    // Gather exactly which WordDefinitions are in this cluster
+    var assignedWords = cluster.Members
+        .Select(a => a.AssignedWord)
+        .Where(wd => wd != null)
+        .ToList();
 
-        // ensure every word in this template can be formed
-        foreach (var wd in wordsInOrder)
-        {
-            if (!counts.TryGetValue(wd.Polarity, out int c) || c < wd.RequiredCount)
-                return false;
-        }
-        return true;
+    // Count occurrences of each WordDefinition
+    var counts = assignedWords
+        .GroupBy(wd => wd)
+        .ToDictionary(g => g.Key, g => g.Count());
+
+    // Now ensure *each* word in your template is really present
+    foreach (var wd in wordsInOrder)
+    {
+        if (!counts.TryGetValue(wd, out int have) || have < wd.RequiredCount)
+            return false;
     }
+    return true;
+}
 }

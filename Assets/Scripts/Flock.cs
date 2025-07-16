@@ -113,13 +113,14 @@ public class Flock : MonoBehaviour
     /// <summary>
     /// Spawns exactly one agent per polarity entry, either in a circle or on the screen edges.
     /// </summary>
-    public void SpawnAgentsFromPolarities(List<Polarity> polarities)
+    public void SpawnAgentsFromPolarities(List<Polarity> polarities, List<WordDefinition> wordDefs)
     {
         // 1) Clear out old agents
         ClearAgents();
 
         // 2) We'll collect all chosen positions here
         List<Vector3> positions = new List<Vector3>();
+        
 
         for (int i = 0; i < polarities.Count; i++)
         {
@@ -154,9 +155,10 @@ public class Flock : MonoBehaviour
                 Quaternion.Euler(Vector3.forward * Random.Range(0f, 360f)),
                 transform
             );
-            newAgent.name        = $"{name} Agent {i}";
+            newAgent.name = $"{name} Agent {i}";
             newAgent.ParentFlock = this;
-            newAgent.polarity    = polarities[i];
+            newAgent.polarity = polarities[i];
+            newAgent.AssignedWord = wordDefs[i];
 
             // tint by polarity
             var sr = newAgent.GetComponentInChildren<SpriteRenderer>();
@@ -164,9 +166,9 @@ public class Flock : MonoBehaviour
             {
                 switch (newAgent.polarity)
                 {
-                    case Polarity.Positive: sr.color = Color.green;  break;
-                    case Polarity.Neutral:  sr.color = Color.gray;   break;
-                    case Polarity.Negative: sr.color = Color.red;    break;
+                    case Polarity.Positive: sr.color = Color.green; break;
+                    case Polarity.Neutral: sr.color = Color.gray; break;
+                    case Polarity.Negative: sr.color = Color.red; break;
                 }
             }
 
