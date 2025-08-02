@@ -8,6 +8,7 @@ public class FlockAgent : MonoBehaviour
 
     public Collider2D AgentCollider { get { return agentCollider; } }
     public Polarity polarity;
+    public int polarityScore = 0;
     public static List<FlockAgent> AllAgents = new List<FlockAgent>();
     [HideInInspector] public Flock ParentFlock;
     [HideInInspector] public WordDefinition AssignedWord;

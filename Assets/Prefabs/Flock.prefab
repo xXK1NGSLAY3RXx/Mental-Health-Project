@@ -52,6 +52,16 @@ MonoBehaviour:
   startingCount: 10
   spawnRadius: 5
   driveFactor: 10
-  maxSpeed: 5
+  maxSpeed: 3
   neighborRadius: 1.5
   avoidanceRadiusMultiplier: 0.5
+  defaultPolarity: 1
+  positiveColor: {r: 0, g: 1, b: 0, a: 1}
+  positiveSprite: {fileID: 21300000, guid: 49c758955c2e27e4894c51f18a5605eb, type: 3}
+  neutralColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  neutralSprite: {fileID: -2594132815782550701, guid: b97660f97a382a9459fa318ba2f8a3e9, type: 3}
+  negativeColor: {r: 1, g: 0, b: 0, a: 1}
+  negativeSprite: {fileID: 21300000, guid: b7cceb10ab88c604d9ab2fd18b875b41, type: 3}
+  polarityScore: 1
+  spawnOnScreenEdge: 0
+  minSpawnSpacing: 1

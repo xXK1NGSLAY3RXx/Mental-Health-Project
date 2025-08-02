@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9106970491381891281}
   - component: {fileID: 3201549113250537676}
+  - component: {fileID: 4353279495421171427}
   m_Layer: 0
   m_Name: Flock Agent Sprite
   m_TagString: Untagged
@@ -75,7 +76,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_Sprite: {fileID: -2594132815782550701, guid: b97660f97a382a9459fa318ba2f8a3e9, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -87,6 +88,18 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &4353279495421171427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4347623046303273412}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c331f4adc1629cd4cb3b892c218518ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6800758984880347756
 GameObject:
   m_ObjectHideFlags: 0
@@ -171,6 +184,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   polarity: 1
+  polarityScore: 0
+  ParentFlock: {fileID: 0}
+  AssignedWord: {fileID: 0}
 --- !u!50 &2994963024217626855
 Rigidbody2D:
   serializedVersion: 5

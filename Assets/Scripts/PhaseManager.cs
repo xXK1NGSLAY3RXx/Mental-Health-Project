@@ -76,7 +76,7 @@ public class PhaseManager : MonoBehaviour
 
         // Spawn one agent per word, assigning each its WordDefinition
         var polarities = bag.Select(wd => wd.Polarity).ToList();
-        flock.SpawnAgentsFromPolarities(polarities, bag);
+        flock.SpawnAgentsWithAssignedWords(polarities, bag);
 
         Debug.Log($"Phase {currentPhase + 1} started with {bag.Count} words");
     }

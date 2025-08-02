@@ -28,8 +28,13 @@ public class Flock : MonoBehaviour
     [Header("Polarity Settings")]
     public Polarity defaultPolarity = Polarity.Neutral;
     public Color positiveColor = Color.green;
+    public Sprite positiveSprite;
     public Color neutralColor = Color.gray;
+    public Sprite neutralSprite;
     public Color negativeColor = Color.red;
+    public Sprite negativeSprite;
+
+    public int polarityScore = 0;
 
     [Header("Phase Spawning")]
     
@@ -66,6 +71,7 @@ public class Flock : MonoBehaviour
             newAgent.name = $"{name} Agent {i}";
             newAgent.polarity = defaultPolarity;
             newAgent.ParentFlock = this;
+            newAgent.polarityScore = polarityScore;
 
             // tint them:
             var sr = newAgent.GetComponentInChildren<SpriteRenderer>();
@@ -73,9 +79,13 @@ public class Flock : MonoBehaviour
             {
                 switch (defaultPolarity)
                 {
-                    case Polarity.Positive: sr.color = positiveColor; break;
-                    case Polarity.Neutral: sr.color = neutralColor; break;
-                    case Polarity.Negative: sr.color = negativeColor; break;
+                    case Polarity.Positive: sr.sprite = positiveSprite; break;
+                    case Polarity.Neutral: sr.sprite = neutralSprite; break;
+                    case Polarity.Negative: sr.sprite = negativeSprite; break;
+                    // case Polarity.Positive: sr.color = positiveColor; break;
+                    // case Polarity.Neutral: sr.color = neutralColor; break;
+                    // case Polarity.Negative: sr.color = negativeColor; break;
+
                 }
             }
             agents.Add(newAgent);
@@ -113,7 +123,7 @@ public class Flock : MonoBehaviour
     /// <summary>
     /// Spawns exactly one agent per polarity entry, either in a circle or on the screen edges.
     /// </summary>
-    public void SpawnAgentsFromPolarities(List<Polarity> polarities, List<WordDefinition> wordDefs)
+    public void SpawnAgentsWithAssignedWords(List<Polarity> polarities, List<WordDefinition> wordDefs)
     {
         // 1) Clear out old agents
         ClearAgents();
@@ -175,6 +185,47 @@ public class Flock : MonoBehaviour
             agents.Add(newAgent);
         }
     }
+    
+    /// <summary>
+    /// Spawns <paramref name="count"/> new agents of the given polarity
+    /// around the specified center point, using this flock’s spawnRadius.
+    /// </summary>
+    public void SpawnAgentsWithPolarity(Polarity polarity, Vector3 center, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            // pick a random point in the spawn circle
+            Vector2 offset = Random.insideUnitCircle * spawnRadius;
+            Vector3 spawnPos = center + (Vector3)offset;
+
+            // instantiate and initialize
+            var newAgent = Instantiate(
+                agentPrefab,
+                spawnPos,
+                Quaternion.Euler(Vector3.forward * Random.Range(0f, 360f)),
+                transform
+            );
+            newAgent.name = $"{name} Agent {agents.Count}";
+            newAgent.ParentFlock = this;
+            newAgent.polarity = polarity;
+
+            // tint by polarity
+            var sr = newAgent.GetComponentInChildren<SpriteRenderer>();
+            if (sr != null)
+            {
+                switch (polarity)
+                {
+                    case Polarity.Positive: sr.sprite = positiveSprite; break;
+                    case Polarity.Neutral: sr.sprite = neutralSprite; break;
+                    case Polarity.Negative: sr.sprite = negativeSprite; break;
+                }
+            }
+
+            agents.Add(newAgent);
+        }
+    }
+
+    
 
     /// <summary>
     /// Picks a random point along the edge of the screen (viewport).
