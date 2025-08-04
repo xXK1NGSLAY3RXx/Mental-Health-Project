@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: New Static Sentence Definition
   m_EditorClassIdentifier: 
   baseAbsorptionPoints: 1000
-  lifetime: 5
+  lifetime: 30
   levels:
   - threshold: 10
     text: Im not ready for my speech, yet.

@@ -1,49 +1,38 @@
+// StaticSentence.cs
 using System;
 using UnityEngine;
 
-/// <summary>
-/// Handles timer, trigger detection, polarity scoring, and absorption logic.
-/// </summary>
 public class StaticSentence : MonoBehaviour
 {
     [Tooltip("Definition SO for text thresholds and multipliers.")]
     public StaticSentenceDefinition definition;
 
-
-    /// <summary> Current accumulated polarity score from boid collisions. </summary>
     public int PolarityScore { get; private set; }
-
     private float timer;
 
-    /// <summary> Fired whenever PolarityScore changes. </summary>
     public event Action<int> OnPolarityScoreChanged;
-
-    /// <summary> Fired when the sentence absorbs, passing computed points. </summary>
     public event Action<int> OnAbsorbed;
 
     [HideInInspector]
     public bool reachedEnd = false;
 
-    Canvas _canvas;
+    private Canvas _canvas;
 
     void Awake()
     {
         _canvas = GetComponent<Canvas>();
-        _canvas.renderMode = RenderMode.WorldSpace;
+        _canvas.renderMode  = RenderMode.WorldSpace;
         _canvas.worldCamera = Camera.main;
-        
     }
 
     void Update()
     {
         if (reachedEnd)
-        { 
+        {
             timer -= Time.deltaTime;
-         if (timer <= 0f)
-            DoAbsorption();
-
+            if (timer <= 0f)
+                DoAbsorption();
         }
-        
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -51,16 +40,25 @@ public class StaticSentence : MonoBehaviour
         var agent = other.GetComponent<FlockAgent>();
         if (agent == null) return;
 
+        // 1) Update raw polarity
         int delta = agent.polarityScore;
-        if (agent.polarity == Polarity.Positive)
-            PolarityScore += delta;
-        else
-            PolarityScore -= delta;
+        PolarityScore += (agent.polarity == Polarity.Positive) ? delta : -delta;
 
+        // 2) Clamp within [minThreshold, maxThreshold]
+        var levels       = definition.levels;
+        int maxThreshold = levels[0].threshold;
+        int minThreshold = levels[levels.Count - 1].threshold;
+        PolarityScore    = Mathf.Clamp(PolarityScore, minThreshold, maxThreshold);
+
+        // 3) Notify any UI of the new (clamped) score
         OnPolarityScoreChanged?.Invoke(PolarityScore);
 
-        // remove the agent
+        // 4) Remove the boid
         agent.ParentFlock.RemoveAgent(agent);
+
+        // 5) If we’ve reached the top threshold, absorb immediately
+        if (PolarityScore >= maxThreshold)
+            DoAbsorption();
     }
 
     private void DoAbsorption()
@@ -70,22 +68,14 @@ public class StaticSentence : MonoBehaviour
         Destroy(gameObject);
     }
 
-    /// <summary>
-    /// Compute absorption based on baseAbsorptionPoints and current level multiplier.
-    /// </summary>
     public int CalculateAbsorptionPoints()
     {
-        float mult = definition.GetMultiplierForScore(PolarityScore);
-        return Mathf.RoundToInt(definition.baseAbsorptionPoints * mult);
+        float m = definition.GetMultiplierForScore(PolarityScore);
+        return Mathf.RoundToInt(definition.baseAbsorptionPoints * m);
     }
-    
+
     public void SetLifetime(float amount)
     {
         timer = amount;
-       
     }
 }
-
-
-
-

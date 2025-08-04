@@ -1,32 +1,29 @@
+// SentenceSpawner.cs
 using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// Spawns a series of sentences in phases: when one is absorbed, the next appears.
-/// Each sentence spawns at <spawnPosition> then, after a delay, moves smoothly to <targetPosition>.
-/// </summary>
 public class SentenceSpawner : MonoBehaviour
 {
-    [Tooltip("Sentence prefab with StaticSentence component and StaticSentenceDisplay")]
+    [Tooltip("Sentence prefab with StaticSentence + StaticSentenceDisplay")]
     public GameObject sentencePrefab;
 
-    [Tooltip("List of SentenceDefinition SOs, in spawn order.")]
+    [Tooltip("SO definitions in spawn order")]
     public StaticSentenceDefinition[] definitions;
 
-    [Tooltip("World-space start position for spawned sentences.")]
+    [Tooltip("Where new sentences appear")]
     public Transform spawnPosition;
 
-    [Tooltip("World-space target position to move sentences to (e.g. center). ")]
+    [Tooltip("Where they lerp to")]
     public Transform targetPosition;
 
-    [Tooltip("Delay in seconds before moving the sentence to the target.")]
+    [Tooltip("Delay before moving into view")]
     public float moveDelay = 0f;
 
-    [Tooltip("Time (seconds) to lerp from spawn to target.")]
+    [Tooltip("How long to lerp")]
     public float moveDuration = 1f;
 
-    [Tooltip("Delay in seconds between one sentence being absorbed and the next spawning.")]
-    public float DelayBetweenSentences = 1f;
+    [Tooltip("Delay between one absorb and next spawn")]
+    public float sentenceDelay = 1f;
 
     public AbsorbedSentenceDisplay absorbedSentenceHUD;
 
@@ -35,59 +32,35 @@ public class SentenceSpawner : MonoBehaviour
 
     void Start()
     {
-        if (absorbedSentenceHUD == null)
-        {
+        if (absorbedSentenceHUD != null)
             absorbedSentenceHUD.ClearAll();
-        }
+
         TrySpawnNext();
     }
 
     void TrySpawnNext()
     {
         if (currentIndex >= definitions.Length)
+        {
+            GameManager.Instance.EndLevel();
             return;
+        }
 
-        // Spawn at the spawnPosition
+        // spawn
         var go = Instantiate(sentencePrefab, spawnPosition.position, Quaternion.identity);
-
-        // Schedule move after delay
-        StartCoroutine(DelayedMove(go.transform));
-
-        // Configure the StaticSentence on this instance
         currentSentence = go.GetComponent<StaticSentence>();
         currentSentence.definition = definitions[currentIndex];
         currentSentence.SetLifetime(currentSentence.definition.lifetime);
 
-        // Initialize the display now that definition is set
+        // display text
         var disp = go.GetComponent<StaticSentenceDisplay>();
-        if (disp != null)
-        {
-            disp.InitializeDisplay();
-        }
+        if (disp != null) disp.InitializeDisplay();
 
-        // Subscribe to the absorption event
+        // move after a moment
+        StartCoroutine(DelayedMove(go.transform));
+
+        // watch for absorb
         currentSentence.OnAbsorbed += HandleAbsorbed;
-    }
-
-    private void HandleAbsorbed(int points)
-    {
-        // Update the HUD with the absorbed sentence
-        absorbedSentenceHUD.AddSentence(
-            currentSentence.definition.GetTextForScore(currentSentence.PolarityScore)
-        );
-
-        // Unsubscribe so we don't double‐call
-        currentSentence.OnAbsorbed -= HandleAbsorbed;
-
-        // Advance index, then wait before spawning the next one
-        currentIndex++;
-        StartCoroutine(DelayedSpawnNext());
-    }
-
-    private IEnumerator DelayedSpawnNext()
-    {
-        yield return new WaitForSeconds(DelayBetweenSentences);
-        TrySpawnNext();
     }
 
     private IEnumerator DelayedMove(Transform t)
@@ -98,8 +71,8 @@ public class SentenceSpawner : MonoBehaviour
 
     private IEnumerator MoveToTarget(Transform t, StaticSentence sentence)
     {
-        Vector3 start   = t.position;
-        Vector3 end     = targetPosition.position;
+        Vector3 start = t.position;
+        Vector3 end   = targetPosition.position;
         float   elapsed = 0f;
 
         while (elapsed < moveDuration)
@@ -111,5 +84,47 @@ public class SentenceSpawner : MonoBehaviour
 
         t.position          = end;
         sentence.reachedEnd = true;
+    }
+
+    private void HandleAbsorbed(int points)
+   {
+     // 1) Update HUD
+     if (absorbedSentenceHUD != null)
+     {
+        absorbedSentenceHUD.AddSentence(
+            currentSentence.definition.GetTextForScore(currentSentence.PolarityScore)
+        );
+     }
+
+     // 2) Add to player score
+     GameManager.Instance.AddScore(points);
+
+     // 3) Trigger feedback dialogue if available
+       var feedbacker = GetComponent<FeedbackDialogue>();
+     if (feedbacker != null)
+     {
+        int maxThresh = currentSentence.definition.levels[0].threshold;
+        bool isGood   = currentSentence.PolarityScore >= maxThresh;
+
+        feedbacker.TriggerFeedback(isGood, () =>
+        {
+            // 4) After dialogue, unsubscribe and spawn next
+            currentSentence.OnAbsorbed -= HandleAbsorbed;
+            currentIndex++;
+            StartCoroutine(DelayedSpawnNext());
+        });
+     }
+     else
+     {
+        // No feedbacker: proceed immediately
+        currentSentence.OnAbsorbed -= HandleAbsorbed;
+        currentIndex++;
+        StartCoroutine(DelayedSpawnNext());
+     }
+    }
+    private IEnumerator DelayedSpawnNext()
+    {
+        yield return new WaitForSeconds(sentenceDelay);
+        TrySpawnNext();
     }
 }
