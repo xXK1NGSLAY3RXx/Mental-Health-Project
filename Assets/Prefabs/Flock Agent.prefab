@@ -112,6 +112,7 @@ GameObject:
   - component: {fileID: 8668139328019421716}
   - component: {fileID: 5215553874549268532}
   - component: {fileID: 2994963024217626855}
+  - component: {fileID: 7861488309865062485}
   m_Layer: 7
   m_Name: Flock Agent
   m_TagString: Untagged
@@ -214,3 +215,20 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &7861488309865062485
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6800758984880347756}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73c75dde6f125474ebb065335fb44f5d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clips:
+  - {fileID: 8300000, guid: 429bf865e4483db42a3af1b71f75ae41, type: 3}
+  - {fileID: 8300000, guid: 827fa2e7b62eea64480e4cad55c8cc32, type: 3}
+  - {fileID: 8300000, guid: 8cc046ebcf5dd5341958dd1c9c9588ca, type: 3}
+  volume: 1

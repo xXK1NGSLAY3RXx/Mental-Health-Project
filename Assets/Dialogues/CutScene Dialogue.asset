@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edde90623c0c33a48875211af98dcee2, type: 3}
+  m_Name: CutScene Dialogue
+  m_EditorClassIdentifier: 
+  entries:
+  - name: Character1
+    dialogueBoxSprite: {fileID: -6462270878252093994, guid: d97d4ab7c92816d4c84cc99244fc3275, type: 3}
+    sentences:
+    - order: 0
+      text: Oh my God ! I cannot do this, I will be humiliated in front of everybody!
+        I always mess up my speeches!
+      characterArt: {fileID: 5820250592914118008, guid: d422f3b290c148341a5c3ada950fa443, type: 3}
+      skip: 1
+      timer: 5
+    - order: 2
+      text: but no matter how hard I try, Im still not good enough!
+      characterArt: {fileID: 4507339321652176367, guid: d422f3b290c148341a5c3ada950fa443, type: 3}
+      skip: 1
+      timer: 5
+    - order: 4
+      text: Really? Ok I will try!
+      characterArt: {fileID: 9054618561424700407, guid: d422f3b290c148341a5c3ada950fa443, type: 3}
+      skip: 1
+      timer: 5
+  - name: Character2
+    dialogueBoxSprite: {fileID: -6462270878252093994, guid: d97d4ab7c92816d4c84cc99244fc3275, type: 3}
+    sentences:
+    - order: 1
+      text: 'Oh don''t worry, perfection is in progress! you can improve a little
+        bit each time you practice! '
+      characterArt: {fileID: -3644460494780032870, guid: 1bea53f34aecb364abccc703266fd6ad, type: 3}
+      skip: 1
+      timer: 5
+    - order: 3
+      text: You are not good enough YET, but with practice, you will be a great speaker!
+        just remember to keep all the negative thoughts out of your head and focus
+        on positive ones !
+      characterArt: {fileID: -3644460494780032870, guid: 1bea53f34aecb364abccc703266fd6ad, type: 3}
+      skip: 1
+      timer: 5

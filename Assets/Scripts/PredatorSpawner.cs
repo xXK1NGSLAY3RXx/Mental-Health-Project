@@ -1,14 +1,11 @@
-using UnityEngine;
-using UnityEngine.InputSystem.EnhancedTouch; 
-using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
-/// <summary>
-/// Spawns two kinds of interactors:
-///  - Predators (left‐click or any touch) that boids flee from
-///  - Attractors (right‐click only) that boids orbit/attract toward
-/// </summary>
 public class PredatorSpawner : MonoBehaviour
 {
     [Tooltip("Prefab for predators (Collider2D on Predator layer)")]
@@ -16,43 +13,59 @@ public class PredatorSpawner : MonoBehaviour
     [Tooltip("Prefab for attractors (Collider2D on Attract layer)")]
     public GameObject attractorPrefab;
 
-    // Track touch/mouse IDs separately
-    private Dictionary<int, GameObject> activePredators   = new();
-    private Dictionary<int, GameObject> activeAttractors  = new();
+    // small history of recent touch-began events
+    struct TouchInfo { public int id; public Vector2 pos; public float time; }
+    private readonly List<TouchInfo> recentTouches = new List<TouchInfo>();
+
+    // tweak these to taste:
+    [Tooltip("Max time between two touches to count as a double-touch")]
+    public float doubleTouchTime = 0.3f;
+    [Tooltip("Max screen-space distance (px) between two touches")]
+    public float doubleTouchDistance = 50f;
+
+    // existing trackers
+    private Dictionary<int, GameObject> activePredators  = new();
+    private Dictionary<int, GameObject> activeAttractors = new();
 
     void OnEnable()  => EnhancedTouchSupport.Enable();
     void OnDisable() => EnhancedTouchSupport.Disable();
 
     void Update()
     {
-        // --- Touch screen: always predator ---
+        // --- Touch screen: predator or attractor on double-touch---
         foreach (var t in Touch.activeTouches)
         {
-            int id = t.touchId;
+            int id      = t.touchId;
             Vector2 pos = t.screenPosition;
+
             switch (t.phase)
             {
                 case UnityEngine.InputSystem.TouchPhase.Began:
-                    BeginPred(id, pos);
+                    if (TryHandleDoubleTouch(id, pos))
+                        break;                  // we spawned an attractor
+                    BeginPred(id, pos);        // otherwise spawn predator
                     break;
+
                 case UnityEngine.InputSystem.TouchPhase.Moved:
                 case UnityEngine.InputSystem.TouchPhase.Stationary:
                     if (activePredators.ContainsKey(id))
                         MovePred(id, pos);
+                    if (activeAttractors.ContainsKey(id))
+                        MoveAttr(id, pos);
                     break;
+
                 case UnityEngine.InputSystem.TouchPhase.Ended:
                 case UnityEngine.InputSystem.TouchPhase.Canceled:
                     EndPred(id);
+                    EndAttr(id);
                     break;
             }
         }
 
-        // --- Mouse fallback ---
-        const int MOUSE_ID_PRED    = -1;
-        const int MOUSE_ID_ATTR    = -2;
-        var   mouse = Mouse.current;
+        // --- Mouse fallback unchanged ---
+        const int MOUSE_ID_PRED = -1, MOUSE_ID_ATTR = -2;
+        var mouse = Mouse.current;
 
-        // Predator = left button
         if (mouse.leftButton.wasPressedThisFrame)
             BeginPred(MOUSE_ID_PRED, mouse.position.ReadValue());
         if (activePredators.ContainsKey(MOUSE_ID_PRED) && mouse.leftButton.isPressed)
@@ -60,7 +73,6 @@ public class PredatorSpawner : MonoBehaviour
         if (mouse.leftButton.wasReleasedThisFrame)
             EndPred(MOUSE_ID_PRED);
 
-        // Attractor = right button
         if (mouse.rightButton.wasPressedThisFrame)
             BeginAttr(MOUSE_ID_ATTR, mouse.position.ReadValue());
         if (activeAttractors.ContainsKey(MOUSE_ID_ATTR) && mouse.rightButton.isPressed)
@@ -69,51 +81,69 @@ public class PredatorSpawner : MonoBehaviour
             EndAttr(MOUSE_ID_ATTR);
     }
 
-    // --- Predator handlers ---
-    void BeginPred(int id, Vector2 screenPos)
+    /// <summary>
+    /// Returns true if this touch began close enough in time & space
+    /// to a previous touch-began to count as a double-touch, and
+    /// in that case spawns an attractor at the midpoint.
+    /// </summary>
+    private bool TryHandleDoubleTouch(int id, Vector2 pos)
     {
-        Vector3 world = Camera.main.ScreenToWorldPoint(screenPos.WithZ(10f));
-        world.z = 0f;
-        activePredators[id] = Instantiate(predatorPrefab, world, Quaternion.identity);
-    }
-    void MovePred(int id, Vector2 screenPos)
-    {
-        if (!activePredators.TryGetValue(id, out var go)) return;
-        Vector3 world = Camera.main.ScreenToWorldPoint(screenPos.WithZ(10f));
-        world.z = 0f;
-        go.transform.position = world;
-    }
-    void EndPred(int id)
-    {
-        if (!activePredators.TryGetValue(id, out var go)) return;
-        Destroy(go);
-        activePredators.Remove(id);
+        float now = Time.time;
+        // purge too-old entries
+        recentTouches.RemoveAll(t => now - t.time > doubleTouchTime);
+
+        // see if any prior began is within distance
+        foreach (var prev in recentTouches)
+        {
+            if ((prev.pos - pos).sqrMagnitude <= doubleTouchDistance * doubleTouchDistance)
+            {
+                // midpoint in screen-space
+                Vector2 mid = (prev.pos + pos) * 0.5f;
+                BeginAttr(id, mid);
+                // clear history so a third touch won’t spawn again immediately
+                recentTouches.Clear();
+                return true;
+            }
+        }
+
+        // otherwise record this began for the next one
+        recentTouches.Add(new TouchInfo { id = id, pos = pos, time = now });
+        return false;
     }
 
-    // --- Attractor handlers ---
-    void BeginAttr(int id, Vector2 screenPos)
+    // Predator handlers…
+    void BeginPred(int id, Vector2 sp)     => activePredators[id] = Spawn(predatorPrefab, sp);
+    void MovePred(int id, Vector2 sp)      => Move(existing: activePredators, id, sp);
+    void EndPred(int id)                   => DestroyAndRemove(activePredators, id);
+
+    // Attractor handlers…
+    void BeginAttr(int id, Vector2 sp)     => activeAttractors[id] = Spawn(attractorPrefab, sp);
+    void MoveAttr(int id, Vector2 sp)      => Move(existing: activeAttractors, id, sp);
+    void EndAttr(int id)                   => DestroyAndRemove(activeAttractors, id);
+
+    // shared spawn/move/destroy helpers:
+    private GameObject Spawn(GameObject prefab, Vector2 screenPos)
     {
-        Vector3 world = Camera.main.ScreenToWorldPoint(screenPos.WithZ(10f));
+        var world = Camera.main.ScreenToWorldPoint(screenPos.WithZ(10f));
         world.z = 0f;
-        activeAttractors[id] = Instantiate(attractorPrefab, world, Quaternion.identity);
+        return Instantiate(prefab, world, Quaternion.identity);
     }
-    void MoveAttr(int id, Vector2 screenPos)
+    private void Move(Dictionary<int,GameObject> existing, int id, Vector2 sp)
     {
-        if (!activeAttractors.TryGetValue(id, out var go)) return;
-        Vector3 world = Camera.main.ScreenToWorldPoint(screenPos.WithZ(10f));
+        if (!existing.TryGetValue(id, out var go)) return;
+        var world = Camera.main.ScreenToWorldPoint(sp.WithZ(10f));
         world.z = 0f;
         go.transform.position = world;
     }
-    void EndAttr(int id)
+    private void DestroyAndRemove(Dictionary<int,GameObject> existing, int id)
     {
-        if (!activeAttractors.TryGetValue(id, out var go)) return;
+        if (!existing.TryGetValue(id, out var go)) return;
         Destroy(go);
-        activeAttractors.Remove(id);
+        existing.Remove(id);
     }
 }
 
 public static class ScreenExtensions
 {
-    // helper to pack a Vector2+Z into Vector3
     public static Vector3 WithZ(this Vector2 v, float z) => new Vector3(v.x, v.y, z);
 }

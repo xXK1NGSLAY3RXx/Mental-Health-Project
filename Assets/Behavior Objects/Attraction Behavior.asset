@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d70f06a20e32544fa58181070cc24db, type: 3}
   m_Name: Attraction Behavior
   m_EditorClassIdentifier: 
-  detectionRadius: 7
+  detectionRadius: 5
   attractLayer:
     serializedVersion: 2
     m_Bits: 256
   ringRadius: 3.5
-  hysteresis: 0.2
+  hysteresis: 2
   joinSpeed: 3
   orbitSpeed: 2
   radialStiffness: 1
-  radialSmoothTime: 0.3
+  radialSmoothTime: 0.5

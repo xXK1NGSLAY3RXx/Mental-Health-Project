@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 31257a982b7c0d040addadbd7aeab524, type: 3}
-  m_Name: New Static Sentence Definition
+  m_Name: New Static Sentence Definition 1
   m_EditorClassIdentifier: 
-  baseAbsorptionPoints: 500
+  baseAbsorptionPoints: 1000
   lifetime: 60
   levels:
   - threshold: 1
-    text: Im not ready for my speech, yet.
+    text: With Practice, I can be a great speaker.
     multiplier: 2
   - threshold: 0
-    text: Im not ready for my speech.
+    text: Im not a good speaker.
     multiplier: 0.5
-  - threshold: -1
-    text: Im absolutly not ready for my speech.
+  - threshold: -10
+    text: I should not open my mouth.
     multiplier: 0

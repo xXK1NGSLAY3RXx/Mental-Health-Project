@@ -1,4 +1,3 @@
-// SentenceSpawner.cs
 using System.Collections;
 using UnityEngine;
 
@@ -32,6 +31,9 @@ public class SentenceSpawner : MonoBehaviour
 
     void Start()
     {
+        // Let GameManager know which definitions are in play so it can compute maxScore
+        GameManager.Instance?.RegisterDefinitions(definitions);
+
         if (absorbedSentenceHUD != null)
             absorbedSentenceHUD.ClearAll();
 
@@ -87,41 +89,44 @@ public class SentenceSpawner : MonoBehaviour
     }
 
     private void HandleAbsorbed(int points)
-   {
-     // 1) Update HUD
-     if (absorbedSentenceHUD != null)
-     {
-        absorbedSentenceHUD.AddSentence(
-            currentSentence.definition.GetTextForScore(currentSentence.PolarityScore)
-        );
-     }
+    {
+        // 1) Capture the displayed text for this sentence at absorption time
+        string displayed = currentSentence.definition.GetTextForScore(currentSentence.PolarityScore);
 
-     // 2) Add to player score
-     GameManager.Instance.AddScore(points);
+        //    Update HUD list (if present)
+        if (absorbedSentenceHUD != null)
+            absorbedSentenceHUD.AddSentence(displayed);
 
-     // 3) Trigger feedback dialogue if available
-       var feedbacker = GetComponent<FeedbackDialogue>();
-     if (feedbacker != null)
-     {
-        int maxThresh = currentSentence.definition.levels[0].threshold;
-        bool isGood   = currentSentence.PolarityScore >= maxThresh;
+        //    Record for endgame/reporting
+        GameManager.Instance?.RecordAbsorbedSentenceVersion(displayed);
 
-        feedbacker.TriggerFeedback(isGood, () =>
+        // 2) Add to player score
+        GameManager.Instance.AddScore(points);
+
+        // 3) Trigger feedback dialogue if available
+        var feedbacker = GetComponent<FeedbackDialogue>();
+        if (feedbacker != null)
         {
-            // 4) After dialogue, unsubscribe and spawn next
+            int maxThresh = currentSentence.definition.levels[0].threshold;
+            bool isGood   = currentSentence.PolarityScore >= maxThresh;
+
+            feedbacker.TriggerFeedback(isGood, () =>
+            {
+                // 4) After dialogue, unsubscribe and spawn next
+                currentSentence.OnAbsorbed -= HandleAbsorbed;
+                currentIndex++;
+                StartCoroutine(DelayedSpawnNext());
+            });
+        }
+        else
+        {
+            // No feedbacker: proceed immediately
             currentSentence.OnAbsorbed -= HandleAbsorbed;
             currentIndex++;
             StartCoroutine(DelayedSpawnNext());
-        });
-     }
-     else
-     {
-        // No feedbacker: proceed immediately
-        currentSentence.OnAbsorbed -= HandleAbsorbed;
-        currentIndex++;
-        StartCoroutine(DelayedSpawnNext());
-     }
+        }
     }
+
     private IEnumerator DelayedSpawnNext()
     {
         yield return new WaitForSeconds(sentenceDelay);

@@ -78,7 +78,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawnPositiveBoids: 1
   spawnNegativeBoids: 0
-  spawnBomb: 1
+  spawnBomb: 0
   spawnMultiplier: 0
   spawnPortal: 0
   activationRadius: 10

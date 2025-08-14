@@ -8,7 +8,9 @@ public class StaticSentence : MonoBehaviour
     public StaticSentenceDefinition definition;
 
     public int PolarityScore { get; private set; }
-    private float timer;
+    
+    [HideInInspector]
+    public float timer { get; private set; }
 
     public event Action<int> OnPolarityScoreChanged;
     public event Action<int> OnAbsorbed;

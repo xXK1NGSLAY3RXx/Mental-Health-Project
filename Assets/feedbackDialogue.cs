@@ -37,6 +37,6 @@ public class FeedbackDialogue : MonoBehaviour
         dialogueManager.StartDialogue(seq, () =>
         {
             onComplete?.Invoke();
-        });
+        }, true);
     }
 }

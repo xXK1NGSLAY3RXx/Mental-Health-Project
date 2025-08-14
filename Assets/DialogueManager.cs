@@ -1,4 +1,3 @@
-// DialogueManager.cs
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,6 +18,9 @@ public class DialogueManager : MonoBehaviour
     [Tooltip("If true, the art sprite hides together with the box; if false, art stays visible when the box hides.")]
     public bool hideCharacterArt = true;
 
+    // [Tooltip("If true, saves the current character art before dialogue and restores it after the sequence completes.")]
+    // public bool revertCharacterArtOnComplete = false;
+
     [Header("Typewriter Settings")]
     [Tooltip("Seconds between each character reveal")]
     public float letterDelay = 0.05f;
@@ -27,6 +29,7 @@ public class DialogueManager : MonoBehaviour
     public AudioClip typeSound;
 
     private AudioSource _audioSource;
+    private Sprite[] _savedArtSprites;
 
     void Awake()
     {
@@ -38,8 +41,19 @@ public class DialogueManager : MonoBehaviour
     /// <summary>
     /// Plays the full sequence, then calls onComplete.
     /// </summary>
-    public void StartDialogue(DialogueSequenceSO seq, Action onComplete)
+    public void StartDialogue(DialogueSequenceSO seq, Action onComplete, bool revertArt)
     {
+        // Save original character art sprites
+        if (revertArt == true)
+        {
+            _savedArtSprites = new Sprite[uiSlots.Length];
+            for (int i = 0; i < uiSlots.Length; i++)
+            {
+                if (uiSlots[i].artRenderer != null)
+                    _savedArtSprites[i] = uiSlots[i].artRenderer.sprite;
+            }
+        }
+
         // Flatten all lines
         var flattened = new List<(string entryName, Sprite boxBg, DialogueLine line)>();
         foreach (var entry in seq.entries)
@@ -55,19 +69,19 @@ public class DialogueManager : MonoBehaviour
         // Sort by order
         chosen.Sort((a, b) => a.line.order.CompareTo(b.line.order));
 
-        StartCoroutine(RunSequence(chosen, onComplete));
+        StartCoroutine(RunSequence(chosen, onComplete, revertArt));
     }
 
     private IEnumerator RunSequence(
         List<(string entryName, Sprite boxBg, DialogueLine line)> list,
-        Action onComplete)
+        Action onComplete, bool revertArt)
     {
         // Hide all slots initially
         foreach (var slot in uiSlots)
-        if (hideCharacterArt)
-            slot.HideAll();
-        else
-            slot.HideBoxOnly();
+            if (hideCharacterArt)
+                slot.HideAll();
+            else
+                slot.HideBoxOnly();
         yield return null;
 
         foreach (var wrap in list)
@@ -83,7 +97,7 @@ public class DialogueManager : MonoBehaviour
             // Show box + art, clear text
             slot.Show(wrap.boxBg, wrap.line.characterArt, string.Empty);
 
-            // Eat leftover tap
+            // Eat leftover frame
             yield return null;
 
             // Typewriter + looping sound
@@ -113,6 +127,16 @@ public class DialogueManager : MonoBehaviour
         }
 
         onComplete?.Invoke();
+
+        // Restore original character art if needed
+        if (revertArt && _savedArtSprites != null)
+        {
+            for (int i = 0; i < uiSlots.Length; i++)
+            {
+                if (uiSlots[i].artRenderer != null && _savedArtSprites[i] != null)
+                    uiSlots[i].artRenderer.sprite = _savedArtSprites[i];
+            }
+        }
     }
 
     private IEnumerator TypeSentence(DialogueUISlot slot, string full, bool canSkip)
@@ -123,9 +147,7 @@ public class DialogueManager : MonoBehaviour
             yield break;
         }
 
-        // Clear any click/touch held down
-        while (Input.GetMouseButton(0) || Input.touchCount > 0)
-            yield return null;
+        
 
         if (typeSound != null)
         {

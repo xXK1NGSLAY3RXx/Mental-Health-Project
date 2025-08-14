@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9509de297a151ae4a9291f752ffd247b, type: 3}
   m_Name: Escape
   m_EditorClassIdentifier: 
-  detectionRadius: 5
-  maxFleeForce: 1
+  detectionRadius: 4
+  maxFleeForce: 3
   predatorLayer:
     serializedVersion: 2
     m_Bits: 64

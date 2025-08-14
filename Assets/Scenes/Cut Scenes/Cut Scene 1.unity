@@ -691,7 +691,7 @@ MeshRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &637170223
 GameObject:
@@ -1204,7 +1204,7 @@ MeshRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &2008180056
 GameObject:
@@ -1433,6 +1433,10 @@ PrefabInstance:
       value: Dialogue Manager
       objectReference: {fileID: 0}
     - target: {fileID: 5616429156870687485, guid: 2d658e743927f8946ac55919c999544b, type: 3}
+      propertyPath: letterDelay
+      value: 0.03
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616429156870687485, guid: 2d658e743927f8946ac55919c999544b, type: 3}
       propertyPath: uiSlots.Array.size
       value: 2
       objectReference: {fileID: 0}
@@ -1474,6 +1478,18 @@ PrefabInstance:
       objectReference: {fileID: 943595236}
     - target: {fileID: 7087641451197983472, guid: 2d658e743927f8946ac55919c999544b, type: 3}
       propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7087641451197983472, guid: 2d658e743927f8946ac55919c999544b, type: 3}
+      propertyPath: nextSceneName
+      value: Level 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7087641451197983472, guid: 2d658e743927f8946ac55919c999544b, type: 3}
+      propertyPath: dialogueSequence
+      value: 
+      objectReference: {fileID: 11400000, guid: 202fc2c020f491f4e9980bef1d5cfa5e, type: 2}
+    - target: {fileID: 7087641451197983472, guid: 2d658e743927f8946ac55919c999544b, type: 3}
+      propertyPath: nextSceneBuildIndex
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
