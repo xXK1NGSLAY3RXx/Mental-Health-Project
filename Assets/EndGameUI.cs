@@ -7,11 +7,12 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Post-level report presenter.
-/// Listens to GameManager.EndLevel and shows:
+/// Shows:
 ///  • Stars earned (0–3)
-///  • Absorbed sentence texts (collected by GameManager.RecordAbsorbedSentenceVersion)
-///  • Plays a dialogue variant based on star count (0/1/2/3)
-///  • Continue + Retry buttons
+///  • Absorbed sentence rows from a single anchor
+///  • Tick in front of top-reached rows; Cross in front of others
+///  • Plays star-based dialogue, then shows Continue/Retry
+/// Robust to subscribe even if GameManager appears later or EndLevel fired early.
 /// </summary>
 public class EndgameUI : MonoBehaviour
 {
@@ -25,11 +26,21 @@ public class EndgameUI : MonoBehaviour
     public Sprite starEmptySprite;
     public Sprite starFilledSprite;
 
-    [Header("Absorbed Sentences List")]
-    [Tooltip("Parent with VerticalLayoutGroup to hold rows.")]
-    public RectTransform sentencesContainer;
-    [Tooltip("Prefab TMP_Text for one row of absorbed text.")]
-    public TMP_Text sentenceRowPrefab;
+    [Header("Sentence Rows (manual layout)")]
+    [Tooltip("Anchor for the FIRST sentence row. New rows will be placed below this.")]
+    public RectTransform firstRowAnchor;
+    [Tooltip("Vertical spacing between rows in local units (pixels).")]
+    public float rowSpacing = 40f;
+    [Tooltip("TMP_Text prefab used for each sentence line (can include a background as a child).")]
+    public TMP_Text sentenceTextPrefab;
+
+    [Tooltip("Tick Image prefab for top-reached sentences.")]
+    public Image checkPrefab;
+    [Tooltip("Cross Image prefab for NOT top-reached sentences.")]
+    public Image crossPrefab;
+
+    [Tooltip("Icon offset relative to each row's anchored position.")]
+    public Vector2 iconOffset = new Vector2(-24f, 0f);
 
     [Header("Dialogue")]
     public DialogueManager dialogueManager;
@@ -43,31 +54,64 @@ public class EndgameUI : MonoBehaviour
     public Button continueButton;
     public Button retryButton;
 
-    [Header("Scene Routing")] 
+    [Header("Scene Routing")]
     [Tooltip("If set, Continue loads this scene by name; else falls back to build index.")]
     public string nextSceneName;
     [Tooltip("Used if nextSceneName is empty.")]
     public int nextSceneBuildIndex = -1;
 
+    // Keep track of spawned UI so we can clear/rebuild
+    private readonly List<GameObject> _spawned = new();
+
+    // Robust subscription / guard flags
+    bool _subscribed = false;
+    Coroutine _subscribeRoutine;
+    bool _shown = false;
+
     void Awake()
     {
-        if (panel) panel.SetActive(false);
+        // Only disable the panel if it is NOT this GameObject
+        if (panel && panel != gameObject)
+            panel.SetActive(false);
+
         if (buttonsRoot) buttonsRoot.SetActive(false);
     }
 
     void OnEnable()
     {
-        if (GameManager.Instance != null)
-            GameManager.Instance.OnLevelEnded += HandleLevelEnded;
+        // Subscribe even if GameManager spawns a few frames later
+        _subscribeRoutine = StartCoroutine(SubscribeWhenGMReady());
 
         if (continueButton) continueButton.onClick.AddListener(OnContinue);
         if (retryButton)    retryButton.onClick.AddListener(OnRetry);
     }
 
+    IEnumerator SubscribeWhenGMReady()
+    {
+        while (GameManager.Instance == null) yield return null;
+
+        var gm = GameManager.Instance;
+
+        if (!_subscribed)
+        {
+            gm.OnLevelEnded += HandleLevelEnded;
+            _subscribed = true;
+        }
+
+        // If the level already ended before we subscribed, show immediately
+        if (gm.LevelHasEnded)
+            HandleLevelEnded();
+    }
+
     void OnDisable()
     {
-        if (GameManager.Instance != null)
+        if (_subscribeRoutine != null) StopCoroutine(_subscribeRoutine);
+
+        if (_subscribed && GameManager.Instance != null)
+        {
             GameManager.Instance.OnLevelEnded -= HandleLevelEnded;
+            _subscribed = false;
+        }
 
         if (continueButton) continueButton.onClick.RemoveListener(OnContinue);
         if (retryButton)    retryButton.onClick.RemoveListener(OnRetry);
@@ -75,6 +119,9 @@ public class EndgameUI : MonoBehaviour
 
     private void HandleLevelEnded()
     {
+        if (_shown) return; // build once
+        _shown = true;
+
         if (panel) panel.SetActive(true);
         if (buttonsRoot) buttonsRoot.SetActive(false);
 
@@ -82,15 +129,19 @@ public class EndgameUI : MonoBehaviour
         int earned = GameManager.Instance.GetStarsEarned();
         PaintStars(earned);
 
-        // Sentences
-        PopulateSentences(GameManager.Instance.GetAbsorbedSentenceVersions());
+        // Sentences (manual rows from a single anchor)
+        PopulateSentencesManual(GameManager.Instance.GetAbsorbedSentences());
 
         // Dialogue
         var seq = PickDialogueFor(earned);
         if (dialogueManager != null && seq != null)
         {
             bool done = false;
+
+            // NOTE: If your DialogueManager.StartDialogue has only (seq, onComplete),
+            // change the next line to: dialogueManager.StartDialogue(seq, () => done = true);
             dialogueManager.StartDialogue(seq, () => done = true, false);
+
             StartCoroutine(WaitThenShowButtons(doneFlag: () => done));
         }
         else
@@ -101,7 +152,6 @@ public class EndgameUI : MonoBehaviour
 
     private IEnumerator WaitThenShowButtons(System.Func<bool> doneFlag)
     {
-        // wait until dialogue manager reports completion
         yield return new WaitUntil(() => doneFlag());
         if (buttonsRoot) buttonsRoot.SetActive(true);
     }
@@ -130,20 +180,67 @@ public class EndgameUI : MonoBehaviour
         }
     }
 
-    private void PopulateSentences(IReadOnlyList<string> lines)
+    /// <summary>
+    /// Spawns one TMP text per absorbed sentence, row-by-row from firstRowAnchor.
+    /// Puts a tick icon for top rows, and a cross icon for non-top rows.
+    /// </summary>
+    private void PopulateSentencesManual(IReadOnlyList<GameManager.AbsorbedSentence> items)
     {
-        if (!sentencesContainer || sentenceRowPrefab == null) return;
-
-        // clear previous
-        for (int i = sentencesContainer.childCount - 1; i >= 0; i--)
-            Destroy(sentencesContainer.GetChild(i).gameObject);
-
-        if (lines == null) return;
-        foreach (var text in lines)
+        if (!firstRowAnchor || sentenceTextPrefab == null)
         {
-            var row = Instantiate(sentenceRowPrefab, sentencesContainer);
-            row.text = text;
+            Debug.LogWarning("EndgameUI: Missing firstRowAnchor or sentenceTextPrefab.");
+            return;
         }
+
+        // Clear prior spawns
+        for (int i = 0; i < _spawned.Count; i++)
+            if (_spawned[i]) Destroy(_spawned[i]);
+        _spawned.Clear();
+
+        if (items == null) return;
+
+        var parent = firstRowAnchor.parent as RectTransform;
+        Vector2 basePos = firstRowAnchor.anchoredPosition;
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            var data = items[i];
+
+            // Create text (this instantiates the WHOLE prefab the TMP_Text is on;
+            // put your background Image as a child of that prefab root so it moves together)
+            TMP_Text txt = Instantiate(sentenceTextPrefab, parent);
+            var textRT = txt.rectTransform;
+
+            // Mirror the anchor/pivot of the reference
+            textRT.anchorMin = firstRowAnchor.anchorMin;
+            textRT.anchorMax = firstRowAnchor.anchorMax;
+            textRT.pivot     = firstRowAnchor.pivot;
+            textRT.anchoredPosition = basePos + new Vector2(0f, -i * rowSpacing);
+
+            // Set text (escaped; no strikethrough)
+            txt.text = EscapeForTMP(data.text);
+            _spawned.Add(txt.gameObject);
+
+            // Icon in front (tick or cross)
+            Image iconPrefab = data.isTop ? checkPrefab : crossPrefab;
+            if (iconPrefab != null)
+            {
+                Image icon = Instantiate(iconPrefab, parent);
+                var iconRT = icon.rectTransform;
+                iconRT.anchorMin = textRT.anchorMin;
+                iconRT.anchorMax = textRT.anchorMax;
+                iconRT.pivot     = textRT.pivot;
+                iconRT.anchoredPosition = textRT.anchoredPosition + iconOffset;
+                _spawned.Add(icon.gameObject);
+            }
+        }
+    }
+
+    // Escape TMP angle brackets in user text to avoid tag parsing
+    private static string EscapeForTMP(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+        return s.Replace("<", "< ").Replace(">", " >");
     }
 
     // --- Buttons ---

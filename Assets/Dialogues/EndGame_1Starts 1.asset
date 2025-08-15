@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edde90623c0c33a48875211af98dcee2, type: 3}
+  m_Name: EndGame_1Starts 1
+  m_EditorClassIdentifier: 
+  entries:
+  - name: Character1-EndGame
+    dialogueBoxSprite: {fileID: -6462270878252093994, guid: d97d4ab7c92816d4c84cc99244fc3275, type: 3}
+    sentences:
+    - order: 0
+      text: 1 star
+      characterArt: {fileID: 8119655846727148135, guid: d422f3b290c148341a5c3ada950fa443, type: 3}
+      skip: 0
+      timer: 5

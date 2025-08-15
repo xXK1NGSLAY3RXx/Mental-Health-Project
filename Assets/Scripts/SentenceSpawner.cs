@@ -90,15 +90,17 @@ public class SentenceSpawner : MonoBehaviour
 
     private void HandleAbsorbed(int points)
     {
-        // 1) Capture the displayed text for this sentence at absorption time
+        // 1) Capture displayed text and whether top threshold was reached
         string displayed = currentSentence.definition.GetTextForScore(currentSentence.PolarityScore);
+        int maxThresh    = currentSentence.definition.levels[0].threshold;
+        bool reachedTop  = currentSentence.PolarityScore >= maxThresh;
 
-        //    Update HUD list (if present)
+        // HUD list (optional)
         if (absorbedSentenceHUD != null)
             absorbedSentenceHUD.AddSentence(displayed);
 
-        //    Record for endgame/reporting
-        GameManager.Instance?.RecordAbsorbedSentenceVersion(displayed);
+        // Record for report (with top flag)
+        GameManager.Instance?.RecordAbsorbedSentence(displayed, reachedTop);
 
         // 2) Add to player score
         GameManager.Instance.AddScore(points);
@@ -107,12 +109,8 @@ public class SentenceSpawner : MonoBehaviour
         var feedbacker = GetComponent<FeedbackDialogue>();
         if (feedbacker != null)
         {
-            int maxThresh = currentSentence.definition.levels[0].threshold;
-            bool isGood   = currentSentence.PolarityScore >= maxThresh;
-
-            feedbacker.TriggerFeedback(isGood, () =>
+            feedbacker.TriggerFeedback(reachedTop, () =>
             {
-                // 4) After dialogue, unsubscribe and spawn next
                 currentSentence.OnAbsorbed -= HandleAbsorbed;
                 currentIndex++;
                 StartCoroutine(DelayedSpawnNext());
@@ -120,7 +118,6 @@ public class SentenceSpawner : MonoBehaviour
         }
         else
         {
-            // No feedbacker: proceed immediately
             currentSentence.OnAbsorbed -= HandleAbsorbed;
             currentIndex++;
             StartCoroutine(DelayedSpawnNext());
