@@ -4,5 +4,5 @@ using UnityEngine;
 public class PhaseDefinition : ScriptableObject
 {
     [Tooltip("Which SentenceDefinitions belong to this phase")]
-    public SentenceDefinition[] sentences;
+    public SentenceStructureDefinition[] sentences;
 }

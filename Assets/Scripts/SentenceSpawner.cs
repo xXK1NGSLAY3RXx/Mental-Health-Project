@@ -7,7 +7,7 @@ public class SentenceSpawner : MonoBehaviour
     public GameObject sentencePrefab;
 
     [Tooltip("SO definitions in spawn order")]
-    public StaticSentenceDefinition[] definitions;
+    public SentenceDefinition[] definitions;
 
     [Tooltip("Where new sentences appear")]
     public Transform spawnPosition;
@@ -27,11 +27,10 @@ public class SentenceSpawner : MonoBehaviour
     public AbsorbedSentenceDisplay absorbedSentenceHUD;
 
     private int currentIndex = 0;
-    private StaticSentence currentSentence;
+    private Sentence currentSentence;
 
     void Start()
     {
-        // Let GameManager know which definitions are in play so it can compute maxScore
         GameManager.Instance?.RegisterDefinitions(definitions);
 
         if (absorbedSentenceHUD != null)
@@ -48,20 +47,16 @@ public class SentenceSpawner : MonoBehaviour
             return;
         }
 
-        // spawn
         var go = Instantiate(sentencePrefab, spawnPosition.position, Quaternion.identity);
-        currentSentence = go.GetComponent<StaticSentence>();
+        currentSentence = go.GetComponent<Sentence>();
         currentSentence.definition = definitions[currentIndex];
         currentSentence.SetLifetime(currentSentence.definition.lifetime);
 
-        // display text
-        var disp = go.GetComponent<StaticSentenceDisplay>();
+        var disp = go.GetComponent<SentenceUI>();
         if (disp != null) disp.InitializeDisplay();
 
-        // move after a moment
         StartCoroutine(DelayedMove(go.transform));
 
-        // watch for absorb
         currentSentence.OnAbsorbed += HandleAbsorbed;
     }
 
@@ -71,7 +66,7 @@ public class SentenceSpawner : MonoBehaviour
         yield return MoveToTarget(t, currentSentence);
     }
 
-    private IEnumerator MoveToTarget(Transform t, StaticSentence sentence)
+    private IEnumerator MoveToTarget(Transform t, Sentence sentence)
     {
         Vector3 start = t.position;
         Vector3 end   = targetPosition.position;
@@ -86,26 +81,29 @@ public class SentenceSpawner : MonoBehaviour
 
         t.position          = end;
         sentence.reachedEnd = true;
+
+        // PHASE BEGINS when the sentence is positioned on screen
+        GameManager.Instance.BeginPhase(currentIndex, definitions.Length);
     }
 
     private void HandleAbsorbed(int points)
     {
-        // 1) Capture displayed text and whether top threshold was reached
         string displayed = currentSentence.definition.GetTextForScore(currentSentence.PolarityScore);
         int maxThresh    = currentSentence.definition.levels[0].threshold;
         bool reachedTop  = currentSentence.PolarityScore >= maxThresh;
 
-        // HUD list (optional)
         if (absorbedSentenceHUD != null)
             absorbedSentenceHUD.AddSentence(displayed);
 
-        // Record for report (with top flag)
         GameManager.Instance?.RecordAbsorbedSentence(displayed, reachedTop);
 
-        // 2) Add to player score
+        // Score first (optional ordering)
         GameManager.Instance.AddScore(points);
 
-        // 3) Trigger feedback dialogue if available
+        // PHASE ENDS as soon as this sentence absorbs (will also clear boids)
+        GameManager.Instance.CompletePhase(currentIndex);
+
+        // Continue to next sentence after optional delay / feedback
         var feedbacker = GetComponent<FeedbackDialogue>();
         if (feedbacker != null)
         {

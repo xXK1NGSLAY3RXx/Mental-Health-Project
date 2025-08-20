@@ -7,7 +7,7 @@ public enum ScoreOperation
     Multiplicative  // word multiplies the running total
 }
 
-[CreateAssetMenu(menuName = "Words/Word Definition")]
+[CreateAssetMenu(menuName = "Word Prototype/Word Definition")]
 public class WordDefinition : ScriptableObject
 {
     [Tooltip("The text to display (one word or phrase)")]

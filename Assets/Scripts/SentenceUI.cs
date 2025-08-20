@@ -4,15 +4,15 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-[RequireComponent(typeof(StaticSentence))]
+[RequireComponent(typeof(Sentence))]
 /// <summary>
 /// Subscribes to a StaticSentence to update UI text fields, a polarity indicator bar,
 /// and a timer-based progress bar fill.
 /// Initialization is deferred until InitializeDisplay() is called.
 /// </summary>
-public class StaticSentenceDisplay : MonoBehaviour
+public class SentenceUI : MonoBehaviour
 {
-    private StaticSentence sentence;
+    private Sentence sentence;
     private bool initialized = false;
 
     [Header("UI Text Fields")]
@@ -46,7 +46,7 @@ public class StaticSentenceDisplay : MonoBehaviour
         if (initialized) return;
         initialized = true;
 
-        sentence = GetComponent<StaticSentence>();
+        sentence = GetComponent<Sentence>();
         var lvls = sentence.definition.levels;
         maxThreshold = lvls[0].threshold;
         minThreshold = lvls[lvls.Count - 1].threshold;

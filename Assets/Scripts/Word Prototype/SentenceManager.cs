@@ -21,7 +21,7 @@ public class SentenceManager : MonoBehaviour
     public int totalScore;
 
     [HideInInspector]
-    public List<SentenceDefinition> AllowedSentences = new List<SentenceDefinition>();
+    public List<SentenceStructureDefinition> AllowedSentences = new List<SentenceStructureDefinition>();
 
     public event Action<SentenceInstance> onSentenceAbsorbed;
 

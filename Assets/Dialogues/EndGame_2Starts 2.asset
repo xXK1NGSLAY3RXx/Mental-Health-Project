@@ -20,4 +20,4 @@ MonoBehaviour:
       text: 2 stars
       characterArt: {fileID: 8119655846727148135, guid: d422f3b290c148341a5c3ada950fa443, type: 3}
       skip: 0
-      timer: 0
+      timer: 5

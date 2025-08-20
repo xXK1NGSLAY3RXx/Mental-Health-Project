@@ -2,10 +2,10 @@
 using System;
 using UnityEngine;
 
-public class StaticSentence : MonoBehaviour
+public class Sentence : MonoBehaviour
 {
     [Tooltip("Definition SO for text thresholds and multipliers.")]
-    public StaticSentenceDefinition definition;
+    public SentenceDefinition definition;
 
     public int PolarityScore { get; private set; }
     
