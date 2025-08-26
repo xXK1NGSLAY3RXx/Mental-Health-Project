@@ -1,4 +1,3 @@
-// SpeakerUI.cs
 using UnityEngine;
 using TMPro;
 

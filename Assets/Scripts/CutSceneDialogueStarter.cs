@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class TestDialogueStarter : MonoBehaviour
+public class CutSceneDialogueStarter : MonoBehaviour
 {
     [Tooltip("Your DialogueSequence SO")]
     public DialogueSequenceSO dialogueSequence;

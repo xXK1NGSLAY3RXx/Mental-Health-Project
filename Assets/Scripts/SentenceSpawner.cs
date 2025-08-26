@@ -104,7 +104,7 @@ public class SentenceSpawner : MonoBehaviour
         GameManager.Instance.CompletePhase(currentIndex);
 
         // Continue to next sentence after optional delay / feedback
-        var feedbacker = GetComponent<FeedbackDialogue>();
+        var feedbacker = GetComponent<FeedbackDialogueStarter>();
         if (feedbacker != null)
         {
             feedbacker.TriggerFeedback(reachedTop, () =>

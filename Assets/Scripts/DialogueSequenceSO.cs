@@ -1,4 +1,3 @@
-// DialogueSequenceSO.cs
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Dialogue/Sequence")]

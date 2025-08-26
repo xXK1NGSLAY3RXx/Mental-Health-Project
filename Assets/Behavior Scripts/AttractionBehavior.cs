@@ -1,4 +1,3 @@
-// AttractionBehavior.cs
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -62,7 +61,7 @@ public class AttractionBehavior : FlockBehavior
         float joinAngle;
         if (angles.Count == 0)
         {
-            // no ring yet: pick a random slot
+            
             joinAngle = Random.value * Mathf.PI * 2f;
         }
         else
@@ -102,7 +101,7 @@ public class AttractionBehavior : FlockBehavior
             // tangential
             Vector2 tangent = new Vector2(-dirCenter.y, dirCenter.x) * orbitSpeed;
             // radial spring
-            float diff = ringRadius - distCenter;  // positive if inside
+            float diff = ringRadius - distCenter;  
             Vector2 targetRadial = -dirCenter * (diff * radialStiffness);
             Vector2 radial = Vector2.SmoothDamp(Vector2.zero, targetRadial, ref radialVelocity, radialSmoothTime);
 

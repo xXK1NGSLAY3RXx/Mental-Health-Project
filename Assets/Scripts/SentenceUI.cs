@@ -5,111 +5,158 @@ using UnityEngine.UI;
 using TMPro;
 
 [RequireComponent(typeof(Sentence))]
-/// <summary>
-/// Subscribes to a StaticSentence to update UI text fields, a polarity indicator bar,
-/// and a timer-based progress bar fill.
-/// Initialization is deferred until InitializeDisplay() is called.
-/// </summary>
 public class SentenceUI : MonoBehaviour
 {
     private Sentence sentence;
     private bool initialized = false;
 
     [Header("UI Text Fields")]
-    [Tooltip("TMP field for the sentence text.")]
     public TMP_Text sentenceText;
-    [Tooltip("TMP field for the polarity score.")]
     public TMP_Text polarityScoreText;
-    [Tooltip("TMP field for the absorption points.")]
     public TMP_Text absorptionPointsText;
 
-    [Header("Polarity Bar")]
-    [Tooltip("RectTransform of the bar background (static red/green halves)")]
-    public RectTransform polarityBarRect;
-    [Tooltip("RectTransform of the moving indicator within the bar.")]
-    public RectTransform polarityIndicator;
+    [Header("Tier Progress (FILLED Image)")]
+    public Image polarityBar;
 
-    [Header("Timer Progress Bar")]
-    [Tooltip("Image component whose fillAmount represents timer progress.")]
-    public Image progressBar;
+    [Header("Timer Progress (FILLED Image)")]
+    public Image timerBar;
 
-    private int minThreshold;
-    private int maxThreshold;
-    private float initialTimer;
+    [Header("Threshold Progress Text")]
+    public TMP_Text thresholdProgressText;
 
-    /// <summary>
-    /// Must be called once, after StaticSentence.definition is set.
-    /// Subscribes to events and does initial UI update.
-    /// </summary>
+    // VFX component lives on the same object
+    private SentenceVFX vfx;
+
+    private float   initialTimer;
+    private Action  _boidHitHandler;
+    private Action<int> _thresholdHandler;
+    private Action  _absorbRequestedHandler;
+
     public void InitializeDisplay()
     {
         if (initialized) return;
         initialized = true;
 
         sentence = GetComponent<Sentence>();
-        var lvls = sentence.definition.levels;
-        maxThreshold = lvls[0].threshold;
-        minThreshold = lvls[lvls.Count - 1].threshold;
+        sentence.InitFromDefinition();
 
-        // Subscribe to polarity events
-        sentence.OnPolarityScoreChanged += UpdateUI;
-        sentence.OnPolarityScoreChanged += UpdateIndicator;
+        vfx = GetComponent<SentenceVFX>();
+        if (vfx == null) vfx = gameObject.AddComponent<SentenceVFX>();
+        if (vfx.fxRoot == null) vfx.fxRoot = GetComponent<RectTransform>();
+
+        // Configure fills
+        if (polarityBar != null)
+        {
+            polarityBar.type = Image.Type.Filled;
+            polarityBar.fillMethod = Image.FillMethod.Horizontal;
+            polarityBar.fillOrigin = (int)Image.OriginHorizontal.Left;
+            polarityBar.fillAmount = 0f;
+        }
+        if (timerBar != null)
+        {
+            timerBar.type = Image.Type.Filled;
+            timerBar.fillMethod = Image.FillMethod.Radial360;
+            timerBar.fillOrigin = (int)Image.Origin360.Bottom;
+            timerBar.fillAmount = 0f;
+        }
+
+        // Subscribe UI updates
+        sentence.OnPolarityScoreChanged += UpdateTexts;
+        sentence.OnPolarityScoreChanged += UpdateTierFill;
+
+        // Forward to VFX (store delegates for clean unsubscribe)
+        _boidHitHandler         = vfx.OnBoidHit;
+        _thresholdHandler       = vfx.OnThresholdReached;
+        _absorbRequestedHandler = () =>
+        {
+            // Pass bars we want hidden during absorb; no arrays stored in VFX
+            if (polarityBar && timerBar)
+                vfx.PlayAbsorb(() => sentence.ConfirmAbsorb(), polarityBar.gameObject, timerBar.gameObject);
+            else if (polarityBar)
+                vfx.PlayAbsorb(() => sentence.ConfirmAbsorb(), polarityBar.gameObject);
+            else if (timerBar)
+                vfx.PlayAbsorb(() => sentence.ConfirmAbsorb(), timerBar.gameObject);
+            else
+                vfx.PlayAbsorb(() => sentence.ConfirmAbsorb());
+        };
+
+        sentence.OnBoidHit          += _boidHitHandler;
+        sentence.OnThresholdReached += _thresholdHandler;
+        sentence.OnAbsorbRequested  += _absorbRequestedHandler;
+
         sentence.OnAbsorbed += OnAbsorbed;
 
         // Initial UI state
-        UpdateUI(sentence.PolarityScore);
-        UpdateIndicator(sentence.PolarityScore);
+        UpdateTexts(sentence.PolarityScore);
+        UpdateTierFill(sentence.PolarityScore);
 
-        // If a progress bar is assigned, start watching the timer
-        if (progressBar != null)
+        if (timerBar != null)
             StartCoroutine(WatchTimerProgress());
     }
 
-    private void UpdateUI(int polarityScore)
+    void OnDisable()
     {
-        if (sentenceText) sentenceText.text = sentence.definition.GetTextForScore(polarityScore);
-        if (polarityScoreText) polarityScoreText.text = polarityScore.ToString();
-        if (absorptionPointsText) absorptionPointsText.text = sentence.CalculateAbsorptionPoints().ToString();
+        if (sentence != null)
+        {
+            sentence.OnPolarityScoreChanged -= UpdateTexts;
+            sentence.OnPolarityScoreChanged -= UpdateTierFill;
+
+            if (_boidHitHandler != null)         sentence.OnBoidHit          -= _boidHitHandler;
+            if (_thresholdHandler != null)       sentence.OnThresholdReached -= _thresholdHandler;
+            if (_absorbRequestedHandler != null) sentence.OnAbsorbRequested  -= _absorbRequestedHandler;
+
+            sentence.OnAbsorbed -= OnAbsorbed;
+        }
     }
 
-    private void UpdateIndicator(int score)
+    // ---------- UI content ----------
+    private void UpdateTexts(int score)
     {
-        float clamped = Mathf.Clamp(score, minThreshold, maxThreshold);
-        float t = (clamped - minThreshold) / (float)(maxThreshold - minThreshold);
-        float x = t * polarityBarRect.rect.width;
-        if (polarityIndicator)
-            polarityIndicator.anchoredPosition = new Vector2(x, polarityIndicator.anchoredPosition.y);
+        if (sentenceText)         sentenceText.text = sentence.definition?.GetTextForScore(score) ?? "";
+        if (polarityScoreText)    polarityScoreText.text = score.ToString();
+        if (absorptionPointsText) absorptionPointsText.text = sentence.CalculateAbsorptionPoints().ToString();
+
+        if (thresholdProgressText)
+        {
+            int numer = sentence.TierIndex;                    // 0 == Default
+            int denom = Mathf.Max(0, sentence.TotalTiers - 1); // non-default tiers
+            thresholdProgressText.text = $"{numer}/{denom}";
+        }
+    }
+
+    private void UpdateTierFill(int score)
+    {
+        if (!polarityBar || sentence == null) return;
+
+        int floor  = sentence.CurrentTierFloor;
+        int next   = sentence.CurrentTierCeil;
+        bool atTop = sentence.AtTopTier;
+
+        float denom    = Mathf.Max(1, next - floor);
+        float progress = atTop ? 1f : Mathf.Clamp01((score - floor) / denom);
+
+        polarityBar.fillAmount = progress;
     }
 
     private void OnAbsorbed(int points)
     {
-        // Optional: play effects or cleanup
+        // optional: post-absorb cleanup
     }
 
-    /// <summary>
-    /// Coroutine that watches for the sentence's timer start and updates the progressBar.fillAmount.
-    /// When timer begins (reachedEnd==true), captures initial timer value.
-    /// Fills from 0 (start) to 1 (when timer reaches zero).
-    /// </summary>
+    // ---------- Timer bar ----------
     private IEnumerator WatchTimerProgress()
     {
-        // Wait until the StaticSentence signals that its timer should start
-        while (!sentence.reachedEnd)
-            yield return null;
+        while (!sentence.reachedEnd) yield return null;
 
-        // Capture the starting timer
         initialTimer = sentence.timer;
-        progressBar.fillAmount = 0f;
+        if (timerBar) timerBar.fillAmount = 0f;
 
-        // Update until timer runs out
         while (sentence.timer > 0f)
         {
             float elapsed = initialTimer - sentence.timer;
-            progressBar.fillAmount = Mathf.Clamp01(elapsed / initialTimer);
+            if (timerBar) timerBar.fillAmount = Mathf.Clamp01(elapsed / initialTimer);
             yield return null;
         }
-
-        // Ensure fully filled
-        progressBar.fillAmount = 1f;
+        if (timerBar) timerBar.fillAmount = 1f;
     }
 }

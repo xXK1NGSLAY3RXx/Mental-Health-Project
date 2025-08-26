@@ -15,7 +15,7 @@ public class SpeakerSpawner : MonoBehaviour
     public GameObject speakerPrefab;
 
     [Tooltip("Flock prefab to instantiate at the same position.")]
-    public Flock flockPrefab;
+    public Flock targetFlock;
 
     [Header("Dialog Data")]
     public string[] positiveDialogs;
@@ -107,36 +107,57 @@ public class SpeakerSpawner : MonoBehaviour
         _loop = null;
     }
 
+    // SpeakerSpawner.cs
+    // Uses the scene's persistent Flock via `targetFlock` (assign in Inspector).
+
     private void SpawnWave()
     {
         var gm = GameManager.Instance;
         if (gm == null || !gm.AllowSpawning) return;
 
+        // Decide speaker polarity and side
         bool isNegative = Random.value < negativeChance;
-        bool spawnLeft  = Random.value < 0.5f;
+        bool spawnLeft = Random.value < 0.5f;
         Vector3 spawnPos = GetRandomLeftOrRightEdge(spawnLeft);
 
-        // Spawn and initialize speaker UI
+        // Spawn + init Speaker UI bubble
         var speakerGO = Instantiate(speakerPrefab, spawnPos, Quaternion.identity);
-        var ui        = speakerGO.GetComponent<SpeakerUI>();
+        var ui = speakerGO.GetComponent<SpeakerUI>();
         if (ui == null)
         {
-            Debug.LogError("Speaker prefab missing SpeakerUI component!");
+            Debug.LogError("[SpeakerSpawner] Speaker prefab missing SpeakerUI.");
             Destroy(speakerGO);
             return;
         }
 
-        // Choose dialog text
-        var pool    = isNegative ? negativeDialogs : positiveDialogs;
-        string text = (pool != null && pool.Length > 0) ? pool[Random.Range(0, pool.Length)] : string.Empty;
-        ui.Init(spawnLeft, text, speakerLifetime);
+        // Pick a dialog line from the appropriate pool
+        var pool = isNegative ? negativeDialogs : positiveDialogs;
+        string text = (pool != null && pool.Length > 0)
+            ? pool[Random.Range(0, pool.Length)]
+            : string.Empty;
 
-        // Spawn flock
-        var flock = Instantiate(flockPrefab, spawnPos, Quaternion.identity);
-        flock.startingCount   = startingCount;
-        flock.defaultPolarity = isNegative ? Polarity.Negative : Polarity.Positive;
-        flock.polarityScore   = agentScore;
+        ui.Init(spawnLeft, text, speakerLifetime); // UI handles self-destroy after lifetime
+
+        // Spawn agents into the existing scene Flock 
+        if (targetFlock != null)
+        {
+           
+        
+            
+            targetFlock.polarityScore = agentScore;
+
+            var polarity = isNegative ? Polarity.Negative : Polarity.Positive;
+            targetFlock.SpawnAgentsWithPolarity(polarity, spawnPos, startingCount, scoreOverride: agentScore);
+
+            
+            
+        }
+        else if (gm.verboseLogging)
+        {
+            Debug.LogWarning("[SpeakerSpawner] targetFlock not assigned; no boids spawned.");
+        }
     }
+
 
     private Vector3 GetRandomLeftOrRightEdge(bool spawnLeft)
     {

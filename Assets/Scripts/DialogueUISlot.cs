@@ -1,4 +1,3 @@
-// DialogueUISlot.cs
 using UnityEngine;
 using TMPro;
 

@@ -30,7 +30,7 @@ public class EventSpawner : MonoBehaviour
     public PhaseEvent[] phaseEvents;
 
     [Header("Prefabs produced by events")]
-    public Flock      flockPrefab;
+    public Flock      targetFlock;
     public GameObject bombPrefab;
     public GameObject multiplierPrefab;
 
@@ -149,24 +149,25 @@ public class EventSpawner : MonoBehaviour
         _running.Clear();
     }
 
+    // EventSpawner.cs
+    // Uses the scene's persistent Flock via `targetFlock` (assign in Inspector).
+
     private void HandleActivation(EventBehavior e)
     {
         Vector3 pos = e.transform.position;
 
-        // Positive Boids
-        if (e.spawnPositiveBoids && flockPrefab != null)
+        // Spawn boids into the existing flock (no new Flock instantiation)
+        if (targetFlock != null)
         {
-            var flock = Instantiate(flockPrefab, pos, Quaternion.identity);
-            flock.startingCount   = e.positiveBoidCount;
-            flock.defaultPolarity = Polarity.Positive;
-        }
+            if (e.spawnPositiveBoids)
+                targetFlock.SpawnAgentsWithPolarity(Polarity.Positive, pos, e.positiveBoidCount);
 
-        // Negative Boids
-        if (e.spawnNegativeBoids && flockPrefab != null)
+            if (e.spawnNegativeBoids)
+                targetFlock.SpawnAgentsWithPolarity(Polarity.Negative, pos, e.negativeBoidCount);
+        }
+        else if (GameManager.Instance?.verboseLogging == true)
         {
-            var flock = Instantiate(flockPrefab, pos, Quaternion.identity);
-            flock.startingCount   = e.negativeBoidCount;
-            flock.defaultPolarity = Polarity.Negative;
+            Debug.LogWarning("[EventSpawner] targetFlock not assigned; boids will not spawn.");
         }
 
         // Bomb
@@ -194,6 +195,8 @@ public class EventSpawner : MonoBehaviour
                 p.SetActive(true);
         }
     }
+
+
 
     private Vector3 GetRandomLeftOrRightEdge(bool spawnLeft)
     {

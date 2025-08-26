@@ -82,7 +82,7 @@ MonoBehaviour:
   spawnMultiplier: 0
   spawnPortal: 0
   activationRadius: 10
-  positiveBoidCount: 10
+  positiveBoidCount: 2
   negativeBoidCount: 10
   bombTimer: 10
   multiplierTimer: 3

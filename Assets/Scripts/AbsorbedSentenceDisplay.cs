@@ -30,7 +30,7 @@ public class AbsorbedSentenceDisplay : MonoBehaviour
                 // Activate the whole panel
                 slot.SetActive(true);
 
-                // Find its TMP_Text child (you can also cache this with GetComponentInChildren if you prefer)
+                // Find its TMP_Text child 
                 var tmp = slot.GetComponentInChildren<TMP_Text>();
                 if (tmp != null)
                     tmp.text = sentence;

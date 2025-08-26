@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Flock : MonoBehaviour
@@ -121,6 +121,7 @@ public class Flock : MonoBehaviour
     }
     
     /// <summary>
+    /// for WordPrototype
     /// Spawns exactly one agent per polarity entry, either in a circle or on the screen edges.
     /// </summary>
     public void SpawnAgentsWithAssignedWords(List<Polarity> polarities, List<WordDefinition> wordDefs)
@@ -185,20 +186,19 @@ public class Flock : MonoBehaviour
             agents.Add(newAgent);
         }
     }
-    
+
     /// <summary>
     /// Spawns <paramref name="count"/> new agents of the given polarity
     /// around the specified center point, using this flock’s spawnRadius.
     /// </summary>
-    public void SpawnAgentsWithPolarity(Polarity polarity, Vector3 center, int count)
+    // Flock.cs
+    public void SpawnAgentsWithPolarity(Polarity polarity, Vector3 center, int count, int? scoreOverride = null)
     {
         for (int i = 0; i < count; i++)
         {
-            // pick a random point in the spawn circle
             Vector2 offset = Random.insideUnitCircle * spawnRadius;
             Vector3 spawnPos = center + (Vector3)offset;
 
-            // instantiate and initialize
             var newAgent = Instantiate(
                 agentPrefab,
                 spawnPos,
@@ -208,8 +208,9 @@ public class Flock : MonoBehaviour
             newAgent.name = $"{name} Agent {agents.Count}";
             newAgent.ParentFlock = this;
             newAgent.polarity = polarity;
+            newAgent.polarityScore = scoreOverride ?? this.polarityScore; // <-- set it here
 
-            // tint by polarity
+            // tint by polarity (existing code)…
             var sr = newAgent.GetComponentInChildren<SpriteRenderer>();
             if (sr != null)
             {
@@ -220,10 +221,11 @@ public class Flock : MonoBehaviour
                     case Polarity.Negative: sr.sprite = negativeSprite; break;
                 }
             }
-
             agents.Add(newAgent);
         }
     }
+
+
 
     
 
@@ -250,7 +252,7 @@ public class Flock : MonoBehaviour
         return world;
     }
 
-    // You’ll need this if not already present:
+    // Removes all agents from this flock.
     public void ClearAgents()
     {
         foreach (var a in agents.ToArray())

@@ -15,12 +15,9 @@ MonoBehaviour:
   baseAbsorptionPoints: 500
   lifetime: 60
   levels:
-  - threshold: 1
-    text: Im not ready for my speech, yet.
-    multiplier: 2
-  - threshold: 0
+  - threshold: 10
     text: Im not ready for my speech.
-    multiplier: 0.5
-  - threshold: -1
-    text: Im absolutly not ready for my speech.
+    multiplier: 1
+  - threshold: 0
+    text: I can't speak in front of everybody !!!
     multiplier: 0

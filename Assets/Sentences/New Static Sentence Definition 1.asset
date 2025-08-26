@@ -15,12 +15,12 @@ MonoBehaviour:
   baseAbsorptionPoints: 1000
   lifetime: 60
   levels:
-  - threshold: 1
+  - threshold: 20
     text: With Practice, I can be a great speaker.
     multiplier: 2
-  - threshold: 0
+  - threshold: 10
     text: Im not a good speaker.
-    multiplier: 0.5
-  - threshold: -10
+    multiplier: 1
+  - threshold: 0
     text: I should not open my mouth.
     multiplier: 0

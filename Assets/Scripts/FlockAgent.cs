@@ -9,8 +9,11 @@ public class FlockAgent : MonoBehaviour
     public Collider2D AgentCollider { get { return agentCollider; } }
     public Polarity polarity;
     public int polarityScore = 0;
-    public static List<FlockAgent> AllAgents = new List<FlockAgent>();
     [HideInInspector] public Flock ParentFlock;
+
+    // parameters for the word prototype
+    public static List<FlockAgent> AllAgents = new List<FlockAgent>();
+    
     [HideInInspector] public WordDefinition AssignedWord;
 
 

@@ -1,8 +1,7 @@
-// FeedbackDialogue.cs
 using System;
 using UnityEngine;
 
-public class FeedbackDialogue : MonoBehaviour
+public class FeedbackDialogueStarter : MonoBehaviour
 {
     [Tooltip("Dialogue to play when player hits the highest threshold")]
     public DialogueSequenceSO goodFeedbackSequence;

@@ -159,17 +159,16 @@ public class GameManager : MonoBehaviour
         OnLevelEnded?.Invoke();
     }
 
-    /// <summary>Destroys all flock/boid gameobjects. Extend if you add new agent types.</summary>
+    /// <summary>Clear all agents in the scene.</summary>
     public void ClearAllBoids()
     {
         foreach (var flock in FindObjectsOfType<Flock>(true))
-            if (flock) Destroy(flock.gameObject);
+            if (flock) flock.ClearAgents();
 
-        foreach (var agent in FindObjectsOfType<FlockAgent>(true))
-            if (agent) Destroy(agent.gameObject);
+        
     }
 
-    // ------------- Optional: maxScore computation -------------
+    // ------------- maxScore computation -------------
     /// <summary>Let a spawner register its definitions so we can compute maxScore for this level.</summary>
     public void RegisterDefinitions(SentenceDefinition[] defs)
     {

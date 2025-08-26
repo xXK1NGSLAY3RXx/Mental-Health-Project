@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 /// Shows:
 ///  • Stars earned (0–3)
 ///  • Absorbed sentence rows from a single anchor
-///  • Tick in front of top-reached rows; Cross in front of others
+///  • Tick in front of completed sentences; Cross in front of others
 ///  • Plays star-based dialogue, then shows Continue/Retry
 /// Robust to subscribe even if GameManager appears later or EndLevel fired early.
 /// </summary>
@@ -34,9 +34,9 @@ public class EndgameUI : MonoBehaviour
     [Tooltip("TMP_Text prefab used for each sentence line (can include a background as a child).")]
     public TMP_Text sentenceTextPrefab;
 
-    [Tooltip("Tick Image prefab for top-reached sentences.")]
+    [Tooltip("Tick Image prefab for completed sentences.")]
     public Image checkPrefab;
-    [Tooltip("Cross Image prefab for NOT top-reached sentences.")]
+    [Tooltip("Cross Image prefab for incomplete sentences.")]
     public Image crossPrefab;
 
     [Tooltip("Icon offset relative to each row's anchored position.")]
@@ -50,7 +50,7 @@ public class EndgameUI : MonoBehaviour
     public DialogueSequenceSO dialogue3Stars;
 
     [Header("Buttons")]
-    public GameObject buttonsRoot;        // parent of Continue/Retry, hidden until dialogue finishes
+    public GameObject buttonsRoot;        
     public Button continueButton;
     public Button retryButton;
 

@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
-public class PredatorSpawner : MonoBehaviour
+public class playerInput : MonoBehaviour
 {
     [Header("Prefabs")]
     [Tooltip("Prefab for predators (Collider2D on Predator layer)")]

@@ -42,7 +42,7 @@ public class EventUI : MonoBehaviour
 
         if (art != null)
         {
-            // reset to default (in case this UI object gets reused)
+            // reset to default 
             art.flipX = false;
             // now flip only when spawning on the right
             if (!spawnLeft)

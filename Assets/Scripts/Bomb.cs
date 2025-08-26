@@ -31,7 +31,7 @@ public class Bomb : MonoBehaviour
     {
         yield return new WaitForSeconds(timer);
 
-        // Calculate world‑space radius (accounts for any scaling)
+        // Calculate world‑space radius 
         float worldRadius = _col.radius * Mathf.Max(transform.lossyScale.x, transform.lossyScale.y);
 
         // Find all colliders (including triggers) within that circle
@@ -54,7 +54,7 @@ public class Bomb : MonoBehaviour
         Destroy(gameObject);
     }
 
-    // Optional: draw the circle in the editor for debugging
+    // draw the circle in the editor for debugging
     void OnDrawGizmosSelected()
     {
         if (_col == null) _col = GetComponent<CircleCollider2D>();
